@@ -78,3 +78,42 @@ final_df=new_df[['movie_id','title','tags']]
 final_df['tags']=final_df['tags'].apply(lambda x:" ".join(x))
 
 final_df['tags']=final_df['tags'].apply(lambda x:x.lower())
+
+
+
+####   vectorization   ####
+#we need to calculate similarity between tags of 2 movies, similarity score, thers no numbers there is only texts,
+
+from sklearn.feature_extraction.text import CountVectorizer
+cv = CountVectorizer(max_features=5000,stop_words='english')
+
+vectors=cv.fit_transform(final_df['tags']).toarray()
+# print(vectors)
+import nltk
+from nltk.stem.porter import PorterStemmer
+ps=PorterStemmer()
+def stem(text):
+    y=[]
+    for i in text.split():
+        y.append(ps.stem(i))
+    return " ".join(y)
+
+final_df['tags']=final_df['tags'].apply(stem)
+# print(final_df.head())
+
+from sklearn.metrics.pairwise import cosine_similarity
+
+sim=cosine_similarity(vectors)
+sorted(list(enumerate(sim[0])),reverse=True,key=lambda x:x[1])
+# lambda tells us to sort based on 2nd key
+def recommend(movie):
+    movie_index= final_df[final_df['title']==movie].index[0]
+    dist=sim[movie_index]
+    movies_list=sorted(list(enumerate(dist)),reverse=True,key=lambda x:x[1])[1:6]
+    for i in movies_list:
+        print(final_df.iloc[i[0]].title)
+        
+recommend('Avatar')
+# print(final_df.iloc[1214])
+import pickle
+pickle.dump(final_df,open('movies.pkl','wb'))
